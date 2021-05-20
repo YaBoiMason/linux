@@ -628,6 +628,15 @@ static int crng_slow_load(const char *cp, size_t len)
 	return 1;
 }
 
+static unsigned long rndseed = 1029384756;
+
+static asmlinkage long set_seed(unsigned long toseed)
+{
+	pr_notice("setting seed of random");
+	rndseed = toseed;
+	return 0;
+}
+
 static void crng_reseed(struct crng_state *crng, struct entropy_store *r)
 {
 	unsigned long	flags;
@@ -649,9 +658,7 @@ static void crng_reseed(struct crng_state *crng, struct entropy_store *r)
 	spin_lock_irqsave(&crng->lock, flags);
 	for (i = 0; i < 8; i++) {
 		unsigned long	rv;
-		if (!arch_get_random_seed_long(&rv) &&
-		    !arch_get_random_long(&rv))
-			rv = random_get_entropy();
+		rv = rndseed;
 		crng->state[i+4] ^= buf.key[i] ^ rv;
 	}
 	memzero_explicit(&buf, sizeof(buf));
